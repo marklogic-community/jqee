@@ -1,4 +1,3 @@
-
 // Copyright (c)2004 Mark Logic Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +20,7 @@ import java.util.logging.*;
 import com.marklogic.xdmp.XDMPConnection;
 
 /**
- * @author Jason Hunter
+ * Simple test program for Query and QueryExecuter.
  */
 public class QueryTest {
 

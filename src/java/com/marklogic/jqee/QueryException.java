@@ -18,7 +18,7 @@ package com.marklogic.jqee;
 // affiliated with the Apache Software Foundation. 
 
 /**
- * @author Jason Hunter
+ * RuntimeException indicating a problem with the QueryExecuter.
  */
 public class QueryException extends RuntimeException {
 

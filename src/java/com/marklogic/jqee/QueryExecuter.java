@@ -26,7 +26,9 @@ import org.jdom.*;
 import org.jdom.input.*;
 
 /**
- * @author Jason Hunter
+ * Class to execute Query instances and return appropriate results.
+ * Includes logic to perform logging and query retrying (in case the server
+ * is rebooted during the execution for example).
  */
 public class QueryExecuter {
   private static final int RETRIES = 10;
@@ -35,10 +37,20 @@ public class QueryExecuter {
   private XDMPConnection con;
   private Logger log = Logger.getLogger(this.getClass().getName());
 
+  /**
+   * Constructs a new instance to perform queries against the supplied
+   * connection instance.
+   * @param con The connection against which to execute queries.
+   */
   public QueryExecuter(XDMPConnection con) {
     this.con = con;
   }
 
+  /**
+   * Assigns a java.util.logging.Logger instance to receive log messages.
+   * By default log messages to go the com.marklogic.jqee.QueryExecuter logger.
+   * @param log The new logger to use.
+   */
   public void setLogger(Logger log) {
     this.log = log;
   }
@@ -83,6 +95,13 @@ public class QueryExecuter {
     throw new QueryException("Giving up on query: " + query);
   }
 
+  /**
+   * Executes the given query and returns an Object array storing the
+   * completely processed results.
+   * @param query Query instance to execute
+   * @return Object array storing the completely processed results
+   * @throws QueryException if there's an unrecoverable problem
+   */
   public Object[] execute(final Query query) throws QueryException {
     ResultHandler handler = new ResultHandler() {
       Object handle(XDBCResultSequence result) throws XDBCException {
@@ -116,7 +135,7 @@ public class QueryExecuter {
                 answers.add(result.getNode().asNode());
               }
               else if (query.getNodesReturnedAs() == Query.JDOM) {
-                // XXX Using nextReader() is broken due to bug 551
+                // XXX See bug 551 regarding the use of nextReader()
                 //BufferedReader reader = result.nextReader();
                 StringReader reader = new StringReader(result.getNode().asString());
                 SAXBuilder builder = new SAXBuilder();
@@ -148,6 +167,14 @@ public class QueryExecuter {
     return (Object[]) execute(query, handler);
   }
 
+  /**
+   * Executes the given query and returns a String array storing the
+   * completely processed results.
+   * @param query The Query instance to execute
+   * @return String array storing the completely processed results
+   * @throws QueryException if there's an unrecoverable problem including the
+   * case where the result sequence contains a value not mappable to a String
+   */
   public String[] executeStrings(Query query) throws QueryException {
     ResultHandler handler = new ResultHandler() {
       Object handle(XDBCResultSequence result) throws XDBCException {
@@ -171,6 +198,16 @@ public class QueryExecuter {
     return (String[]) execute(query, handler);
   }
 
+  /**
+   * Executes the given query and returns a single String storing the
+   * first returned item as a String.
+   *
+   * @param query The Query instance to execute
+   * @return String storing the first returned item as a String
+   * @throws QueryException if there's an unrecoverable problem including the
+   * case where the result sequence contains an initial value not mappable to
+   * a String
+   */
   public String executeString(Query query) throws QueryException {
     String[] answers = executeStrings(query);
     if (answers.length >= 1) {
@@ -179,6 +216,15 @@ public class QueryExecuter {
     else throw new QueryException("Got empty value: " + query);
   }
 
+  /**
+   * Executes the given query and returns a single int derived from the
+   * first returned item.
+   *
+   * @param query The Query instance to execute
+   * @return int storing the first returned item
+   * @throws QueryException if there's an unrecoverable problem including the
+   * case where the result sequence contains an initial value not of int type
+   */
   public int executeInt(Query query) throws QueryException {
     Object[] answers = execute(query);
     if (answers.length >= 1) {
@@ -193,6 +239,16 @@ public class QueryExecuter {
       throw new QueryException("Got empty answer: " + query);
   }
 
+  /**
+   * Executes the given query and returns a single boolean derived from the
+   * first returned item.
+   *
+   * @param query The Query instance to execute
+   * @return boolean storing the first returned item
+   * @throws QueryException if there's an unrecoverable problem including the
+   * case where the result sequence contains an initial value not of boolean
+   * type
+   */
   public boolean executeBoolean(Query query) throws QueryException {
     Object[] answers = execute(query);
     if (answers.length >= 1) {
@@ -211,6 +267,12 @@ public class QueryExecuter {
     try { Thread.sleep(ms); } catch (InterruptedException e) { }
   }
 
+  /**
+   * Closed the underlying connection.
+   *
+   * @throws QueryException if closing the underlying connection threw an
+   * exception
+   */
   public void close() throws QueryException {
     try {
       con.close();
