@@ -20,6 +20,7 @@ package com.marklogic.jqee;
 /**
  * The Query class represents an XQuery expression and the caller's preferences
  * for how values should be returned for the query.
+ * @author Jason Hunter, Mark Logic Corporation
  */
 public class Query {
 

@@ -29,10 +29,14 @@ import org.jdom.input.*;
  * Class to execute Query instances and return appropriate results.
  * Includes logic to perform logging and query retrying (in case the server
  * is rebooted during the execution for example).
+ * @author Jason Hunter, Mark Logic Corporation
  */
 public class QueryExecuter {
   private static final int RETRIES = 10;
   private static final int RETRY_WAIT = 30000;  // ms
+
+  private int retries = RETRIES;
+  private long retryWait = RETRY_WAIT;
 
   private XDMPConnection con;
   private Logger log = Logger.getLogger(this.getClass().getName());
@@ -47,6 +51,22 @@ public class QueryExecuter {
   }
 
   /**
+   * Sets the number of times to retry before giving up.
+   * @param retries Number of retries
+   */
+  public void setRetries (int retries) {
+    this.retries = retries;
+  }
+
+  /**
+   * Set the amount of time to wait between retries.
+   # @param retryWait Time to wait, in milliseconds
+   */
+  public void setRetryWait (long retryWait) {
+    this.retryWait = retryWait;
+  }
+
+  /**
    * Assigns a java.util.logging.Logger instance to receive log messages.
    * By default log messages to go the com.marklogic.jqee.QueryExecuter logger.
    * @param log The new logger to use.
@@ -56,7 +76,12 @@ public class QueryExecuter {
   }
 
   private Object execute(Query query, ResultHandler handler) throws QueryException {
-    int retriesLeft = RETRIES;
+    int retriesLeft = retries;
+
+    if (retries <= 0) {
+      retriesLeft = 1;
+    }
+
     while (retriesLeft > 0) {
       XDBCStatement stmt = null;
       XDBCResultSequence result = null;
@@ -71,7 +96,12 @@ public class QueryExecuter {
         retriesLeft--;
         log.log(Level.WARNING, "XDBC problem: Retries left: " +
                                retriesLeft + ": " + e, e);
-        sleep(RETRY_WAIT);
+
+        if (retriesLeft <= 0) {
+          throw new QueryException ("Giving up on query (" + e + "): " + query);
+        }
+
+        sleep (retryWait);
       }
       finally {
         if (stmt != null) {
@@ -263,7 +293,7 @@ public class QueryExecuter {
       throw new QueryException("Got empty answer: " + query);
   }
 
-  private void sleep(int ms) {
+  private void sleep(long ms) {
     try { Thread.sleep(ms); } catch (InterruptedException e) { }
   }
 

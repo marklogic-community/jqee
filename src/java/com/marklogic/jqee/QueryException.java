@@ -19,6 +19,7 @@ package com.marklogic.jqee;
 
 /**
  * RuntimeException indicating a problem with the QueryExecuter.
+ * @author Jason Hunter, Mark Logic Corporation
  */
 public class QueryException extends RuntimeException {
 
